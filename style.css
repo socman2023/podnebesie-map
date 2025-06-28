@@ -1,0 +1,78 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: serif;
+  background-color: #f8f4e3;
+}
+
+#map-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+#main-map {
+  width: 100%;
+  display: block;
+}
+
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+#tooltip {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 400px;
+  background: #f4efe1;
+  border: 3px solid #7b5e3e;
+  border-radius: 10px;
+  padding: 16px;
+  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+#tooltip.hidden {
+  display: none;
+}
+
+#tooltip h2 {
+  margin-top: 0;
+}
+
+#tooltip img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+#tooltip-description {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#tooltip-links a {
+  display: inline-block;
+  margin-top: 8px;
+  margin-right: 5px;
+  text-decoration: none;
+  color: #5b3b1d;
+  font-weight: bold;
+}
+
+#close-tooltip {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #333;
+}

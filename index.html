@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Интерактивная карта Поднебесья</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map-container">
+    <img src="map-base.png" alt="Карта Поднебесья" id="main-map" />
+    <canvas id="overlay"></canvas>
+  </div>
+  <div id="tooltip" class="hidden">
+    <button id="close-tooltip">×</button>
+    <h2 id="tooltip-title"></h2>
+    <img id="tooltip-image" src="" alt="" />
+    <p id="tooltip-description"></p>
+    <div id="tooltip-links"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
