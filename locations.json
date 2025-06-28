@@ -1255,7 +1255,7 @@
     "x": 5895,
     "y": 4493,
     "type": "link",
-    "image": "",
+    "image": "images/qr-code_Oleshka.png",
     "description": "Главный герой книги \"Княжич\"",
     "links": [{"text": "Страничка в ВК", "target": "https://vk.com/oleshka2024"}]
   },
@@ -1265,7 +1265,7 @@
     "x": 6296,
     "y": 4534,
     "type": "link",
-    "image": "",
+    "image": "images/qr-code_Sanko.png",
     "description": "Лучший друг главного героя",
     "links": [{"text": "Страничка в ВК", "target": "https://vk.com/sanko2025"}]
   },
@@ -1275,8 +1275,8 @@
     "x": 3438,
     "y": 318,
     "type": "link",
-    "image": "",
+    "image": "images/qr-code_letopis.png",
     "description": "Мир, в котором разворачиваются события книги \"Княжич\"",
-    "links": [{"text": "Летопись Поднебесья", "target": "https://vk.com/kniazhich"}]
+    "links": [{"text": "Сообщество в ВК", "target": "https://vk.com/kniazhich"}]
   }
 ]
