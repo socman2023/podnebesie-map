@@ -2,8 +2,8 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: serif;
-  background-color: #f8f4e3;
+  font-family: 'Georgia', serif;
+  background-color: #f4efe7;
 }
 
 #map-container {
@@ -29,13 +29,14 @@ body {
   top: 10%;
   left: 50%;
   transform: translateX(-50%);
-  max-width: 400px;
-  background: #f4efe1;
-  border: 3px solid #7b5e3e;
-  border-radius: 10px;
+  max-width: 420px;
+  background: #fffdf8;
+  border: 3px solid #6b4b2e;
+  border-radius: 12px;
   padding: 16px;
   z-index: 1000;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  box-shadow: 0 0 14px rgba(0,0,0,0.4);
+  color: #2d1f0f;
 }
 
 #tooltip.hidden {
@@ -44,26 +45,40 @@ body {
 
 #tooltip h2 {
   margin-top: 0;
+  font-size: 20px;
+  color: #442d1b;
 }
 
 #tooltip img {
   max-width: 100%;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: none;
 }
 
 #tooltip-description {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+#tooltip-description b {
+  color: #3d2512;
 }
 
 #tooltip-links a {
   display: inline-block;
-  margin-top: 8px;
-  margin-right: 5px;
+  margin-top: 10px;
+  margin-right: 8px;
   text-decoration: none;
-  color: #5b3b1d;
+  background: #e8d3b9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #3d2512;
   font-weight: bold;
+}
+
+#tooltip-links a:hover {
+  background: #dbc3a7;
 }
 
 #close-tooltip {
@@ -72,7 +87,7 @@ body {
   right: 10px;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
-  color: #333;
+  color: #444;
 }

@@ -17,7 +17,8 @@ fetch('locations.json')
     locations = data;
     resizeCanvas();
     drawPoints();
-  });
+  })
+  .catch(err => console.error("Ошибка загрузки locations.json:", err));
 
 function resizeCanvas() {
   overlay.width = mapImage.clientWidth;
@@ -35,7 +36,7 @@ function drawPoints() {
     ctx.arc(x, y, 6, 0, 2 * Math.PI);
     ctx.fillStyle = getColorByType(loc.type);
     ctx.fill();
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = '#2c1a0a';
     ctx.stroke();
   });
 }
@@ -61,22 +62,27 @@ overlay.addEventListener('click', function(e) {
   const found = locations.find(loc => {
     const dx = loc.x - xClick;
     const dy = loc.y - yClick;
-    return Math.sqrt(dx * dx + dy * dy) < 15;
+    return Math.sqrt(dx * dx + dy * dy) < 20;
   });
 
   if (found) showTooltip(found);
 });
 
 function showTooltip(loc) {
-  titleEl.textContent = loc.name;
-  imgEl.src = 'images/' + loc.image;
-  imgEl.alt = loc.name;
-  descEl.textContent = loc.description;
-  linksEl.innerHTML = '';
+  titleEl.textContent = loc.title || loc.name;
+  if (loc.image && loc.image.trim() !== "") {
+    imgEl.src = loc.image;
+    imgEl.alt = loc.title;
+    imgEl.style.display = "block";
+  } else {
+    imgEl.style.display = "none";
+  }
+  descEl.innerHTML = loc.description || "";
+  linksEl.innerHTML = "";
   loc.links.forEach(link => {
     const a = document.createElement('a');
     a.textContent = link.text;
-    a.href = '#';
+    a.href = "#";
     a.onclick = () => {
       const target = locations.find(l => l.id === link.target);
       if (target) showTooltip(target);
@@ -84,11 +90,11 @@ function showTooltip(loc) {
     };
     linksEl.appendChild(a);
   });
-  tooltip.classList.remove('hidden');
+  tooltip.classList.remove("hidden");
 }
 
 closeBtn.addEventListener('click', () => {
-  tooltip.classList.add('hidden');
+  tooltip.classList.add("hidden");
 });
 
 window.addEventListener('resize', () => {
