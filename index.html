@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
   <script defer src="vendor/leaflet/leaflet.js"></script>
+  <script defer src="vendor/vk-bridge/browser.min.js"></script>
+  <script defer src="vk-app.js"></script>
   <script defer src="script.js"></script>
 </head>
 <body>
@@ -36,6 +38,8 @@
           <option value="link">Ссылки</option>
         </select>
         <button id="list-toggle" type="button" aria-expanded="false" aria-controls="list-panel">Список</button>
+        <button id="vk-share" type="button" title="Поделиться картой" hidden>Поделиться</button>
+        <button id="vk-favorite" type="button" title="Добавить карту в избранное ВКонтакте" hidden>В избранное</button>
         <button id="reset-view" type="button" title="Показать всю карту" aria-label="Показать всю карту">Вся карта</button>
       </div>
     </header>
@@ -44,6 +48,7 @@
       <div id="map" role="region" aria-label="Карта Поднебесья. Используйте масштабирование и перемещение, либо поиск и список объектов."></div>
       <div id="loading-state" class="loading-state" role="status">Загружаем карту Поднебесья…</div>
       <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
+      <div id="action-feedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
 
       <section id="list-panel" class="list-panel" aria-label="Список объектов карты" hidden>
         <div class="panel-heading">
@@ -65,6 +70,7 @@
           <img id="details-image" alt="" loading="lazy" decoding="async" hidden>
           <div id="details-description" class="details-description"></div>
           <nav id="details-links" class="details-links" aria-label="Связанные объекты"></nav>
+          <div class="details-actions"><button id="location-share" type="button">Поделиться местом</button></div>
         </div>
       </aside>
     </main>
