@@ -194,6 +194,7 @@ function showCard(loc, pushHistory) {
     marker.setZIndexOffset(id === selectedId ? 1000 : 0);
   }
   if (map) renderMarkers();
+  if (window.PodnebesieVK) window.PodnebesieVK.setSelectedId(loc.id);
   requestAnimationFrame(() => detailsTitle.focus({ preventScroll: true }));
 }
 
@@ -208,6 +209,7 @@ function closeCard() {
     marker.setZIndexOffset(0);
   }
   if (map) renderMarkers();
+  if (window.PodnebesieVK) window.PodnebesieVK.setSelectedId(null);
 }
 
 function goToLocation(loc, addHistory) {
@@ -372,6 +374,20 @@ function initMap() {
   window.addEventListener('resize', updateFitZoom);
   renderMarkers();
   loadingElement.hidden = true;
+
+  // VK Mini Apps: маршруты подключаются только после загрузки всех объектов.
+  // Номер приложения и токены не требуются для обычной работы карты.
+  if (window.PodnebesieVK) {
+    window.PodnebesieVK.attachRoutes({
+      has: (id) => byId.has(id),
+      open: (id) => {
+        const location = byId.get(id);
+        if (location) goToLocation(location, false);
+      },
+      close: closeCard,
+      selected: () => selectedId
+    });
+  }
 }
 
 detailsImage.addEventListener('error', () => { detailsImage.hidden = true; });
