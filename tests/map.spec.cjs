@@ -1,18 +1,5 @@
 const { test, expect } = require('@playwright/test');
 
-async function readMapDebug(page) {
-  return await page.evaluate(() => ({
-    center: map.getCenter(), zoom: map.getZoom(), fitZoom,
-    bounds: map.getBounds().toBBoxString(),
-    minZoom: map.getMinZoom(), maxZoom: map.getMaxZoom(),
-    mapSize: map.getSize(), selectedId,
-    pin: selectedId && byId.has(selectedId) ? map.latLngToContainerPoint(coord(byId.get(selectedId))) : null,
-    panePos: map._getMapPanePos(),
-    paneStyle: document.querySelector('.leaflet-map-pane')?.getAttribute('style'),
-    imageStyles: Array.from(document.querySelectorAll('.leaflet-image-layer')).map(x => x.getAttribute('style'))
-  }));
-}
-
 test('128 existing locations remain intact', async ({ request }) => {
   const response = await request.get('/locations.json');
   expect(response.ok()).toBeTruthy();
@@ -58,7 +45,7 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#loading-state')).toBeHidden({ timeout: 30000 });
-    console.log('INIT_MAP', width, JSON.stringify(await readMapDebug(page)));
+
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -66,7 +53,7 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     await page.locator('#search-input').fill('Академия');
     await page.locator('#search-results button').first().click();
     await expect(page.locator('#details-title')).toHaveText('Академия');
-    console.log('AFTER_ACADEMY', width, JSON.stringify(await readMapDebug(page)));
+
     const bounds = await page.locator('#details').boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds.width).toBeLessThanOrEqual(width + 1);
@@ -74,7 +61,7 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     await expect(page.locator('#details-links button')).toContainText('Полуночные горы');
     await page.locator('#details-links button').first().click();
     await expect(page.locator('#details-title')).toHaveText('Полуночные горы');
-    console.log('AFTER_POLUNOCH', width, JSON.stringify(await readMapDebug(page)));
+
     // Выбранная точка должна оставаться на ВИДИМОЙ карте, не за нижней карточкой.
     const selectedPin = page.locator('.map-pin--selected').first();
     await expect(selectedPin).toBeVisible();
@@ -82,22 +69,6 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     const sheet = await page.locator('#details').boundingBox();
     expect(pin).not.toBeNull();
     expect(sheet).not.toBeNull();
-    const debug = await page.evaluate(() => {
-      const target = Array.from(document.querySelectorAll('.leaflet-marker-icon')).find(e => e.classList.contains('map-pin--selected'));
-      return {
-        viewport: [innerWidth, innerHeight],
-        mapDOM: document.getElementById('map').getBoundingClientRect().toJSON(),
-        pinDOM: target ? target.getBoundingClientRect().toJSON() : null,
-        sheetDOM: document.getElementById('details').getBoundingClientRect().toJSON(),
-        center: typeof map !== 'undefined' ? map.getCenter() : null,
-        currentZoom: typeof map !== 'undefined' ? map.getZoom() : null,
-        fitZoom: typeof fitZoom !== 'undefined' ? fitZoom : null,
-        selectedId: typeof selectedId !== 'undefined' ? selectedId : null,
-        pinCoords: typeof map !== 'undefined' && typeof coord !== 'undefined' && typeof byId !== 'undefined' && byId.has(selectedId) ? map.latLngToContainerPoint(coord(byId.get(selectedId))) : null,
-        imageLayer: Array.from(document.querySelectorAll('.leaflet-image-layer')).map(x => x.getBoundingClientRect().toJSON())
-      };
-    });
-    console.log('MOBILE_DEBUG', width, JSON.stringify(debug));
     expect(pin.y + pin.height / 2).toBeLessThan(sheet.y - 8);
     await page.screenshot({ path: 'screenshots/mobile-' + width + '.png' });
 
