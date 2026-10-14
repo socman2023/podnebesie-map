@@ -35,6 +35,13 @@ const detailsBack = $('details-back');
 let map = null;
 let imageBounds = null;
 let fitZoom = -5;
+let previewOverlay = null;
+let detailOverlay = null;
+let detailReady = false;
+let previewFallbackUsed = false;
+let detailFallbackUsed = false;
+const DETAIL_PRELOAD_ZOOM_GAIN = 0.75;
+const DETAIL_SHOW_ZOOM_GAIN = 1.35;
 let locations = [];
 let selectedId = null;
 let historyIds = [];
@@ -250,10 +257,14 @@ function makeMarker(loc) {
  */
 function renderMarkers() {
   if (!map) return;
+  updateRasterQuality();
   const zoomGain = map.getZoom() - fitZoom;
   let visibleTypes = null;
-  if (zoomGain < 1.0) visibleTypes = new Set(['state', 'link']);
-  else if (zoomGain < 1.8) visibleTypes = new Set(['state', 'city', 'landmark', 'link']);
+  // Активный фильтр обязан показывать выбранную категорию на любом масштабе.
+  if (typeFilter.value === 'all') {
+    if (zoomGain < 1.0) visibleTypes = new Set(['state', 'link']);
+    else if (zoomGain < 1.8) visibleTypes = new Set(['state', 'city', 'landmark', 'link']);
+  }
   const priority = { state: 1, city: 2, landmark: 3, place: 4, water: 5, tribe: 6, link: 7 };
   const candidates = locations
     .filter((loc) => matchesFilter(loc) && (!visibleTypes || visibleTypes.has(loc.type) || loc.id === selectedId))
@@ -291,6 +302,31 @@ function updateFitZoom() {
   renderMarkers();
 }
 
+function updateRasterQuality() {
+  if (!map || !previewOverlay) return;
+  const zoomGain = map.getZoom() - fitZoom;
+
+  // Не скачиваем полноразмерную карту до первого приближения.
+  if (!detailOverlay && zoomGain >= DETAIL_PRELOAD_ZOOM_GAIN) {
+    detailOverlay = L.imageOverlay('map-full.webp', imageBounds, {
+      alt: 'Подробная художественная карта Поднебесья',
+      opacity: 0, interactive: false
+    }).addTo(map);
+    detailOverlay.on('load', () => {
+      detailReady = true;
+      detailOverlay.setOpacity(map.getZoom() - fitZoom >= DETAIL_SHOW_ZOOM_GAIN ? 1 : 0);
+    });
+    detailOverlay.on('error', () => {
+      if (detailFallbackUsed) return;
+      detailFallbackUsed = true;
+      detailOverlay.setUrl('map-base.png');
+    });
+  }
+  if (detailOverlay && detailReady) {
+    detailOverlay.setOpacity(zoomGain >= DETAIL_SHOW_ZOOM_GAIN ? 1 : 0);
+  }
+}
+
 function initMap() {
   if (!window.L) {
     loadingElement.textContent = 'Не удалось загрузить движок карты. Проверьте подключение к интернету и обновите страницу.';
@@ -303,10 +339,16 @@ function initMap() {
     zoomControl: false, attributionControl: false,
     preferCanvas: false, keyboard: true
   });
-  L.imageOverlay('map-base.png', imageBounds, {
+  // Сначала малая WebP (~0.4 MB); исходный PNG остаётся безопасным fallback.
+  previewOverlay = L.imageOverlay('map-preview.webp', imageBounds, {
     alt: 'Художественная карта мира Поднебесья',
     interactive: false
   }).addTo(map);
+  previewOverlay.on('error', () => {
+    if (previewFallbackUsed) return;
+    previewFallbackUsed = true;
+    previewOverlay.setUrl('map-base.png');
+  });
   L.control.zoom({ position: 'topright', zoomInTitle: 'Приблизить', zoomOutTitle: 'Отдалить' }).addTo(map);
   map.fitBounds(imageBounds, { padding: [18, 18], animate: false });
   fitZoom = map.getBoundsZoom(imageBounds, false, L.point(18, 18));
