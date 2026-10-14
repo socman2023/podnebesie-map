@@ -212,7 +212,7 @@ function goToLocation(loc, addHistory) {
 }
 
 function makeMarker(loc) {
-  const type = Object.hasOwn(TYPE_NAMES, loc.type) ? loc.type : 'place';
+  const type = Object.prototype.hasOwnProperty.call(TYPE_NAMES, loc.type) ? loc.type : 'place';
   const icon = L.divIcon({
     className: 'map-pin map-pin--' + type,
     html: '<span class="map-pin-core" aria-hidden="true"></span>',
