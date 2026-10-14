@@ -59,6 +59,14 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     await expect(page.locator('#details-links button')).toContainText('Полуночные горы');
     await page.locator('#details-links button').first().click();
     await expect(page.locator('#details-title')).toHaveText('Полуночные горы');
+    // Выбранная точка должна оставаться на ВИДИМОЙ карте, не за нижней карточкой.
+    const selectedPin = page.locator('.map-pin--selected').first();
+    await expect(selectedPin).toBeVisible();
+    const pin = await selectedPin.boundingBox();
+    const sheet = await page.locator('#details').boundingBox();
+    expect(pin).not.toBeNull();
+    expect(sheet).not.toBeNull();
+    expect(pin.y + pin.height / 2).toBeLessThan(sheet.y - 8);
     await page.screenshot({ path: 'screenshots/mobile-' + width + '.png' });
 
     await page.locator('#details-close').click();
