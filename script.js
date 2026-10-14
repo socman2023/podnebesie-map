@@ -220,7 +220,7 @@ function goToLocation(loc, addHistory) {
   if (window.matchMedia('(max-width: 600px)').matches && !details.hidden) {
     const sheetHeight = details.getBoundingClientRect().height;
     const mapHeight = map.getSize().y;
-    map.panBy([0, Math.min(sheetHeight / 2, mapHeight * 0.34)], { animate: false });
+    map.panBy([0, -Math.min(sheetHeight / 2, mapHeight * 0.34)], { animate: false });
   }
 }
 
@@ -365,7 +365,7 @@ function initMap() {
     const fillZoom = map.getBoundsZoom(imageBounds, true, L.point(12, 12));
     map.setZoom(Math.min(map.getMaxZoom(), Math.max(fitZoom + 1.15, fillZoom)), { animate: false });
   }
-  map.setMaxBounds(imageBounds.pad(0.04));
+  map.setMaxBounds(imageBounds.pad(window.matchMedia('(max-width: 600px)').matches ? 0.35 : 0.08));
   for (const loc of locations) markers.set(loc.id, makeMarker(loc));
   map.on('zoomend moveend', renderMarkers);
   window.addEventListener('resize', updateFitZoom);
