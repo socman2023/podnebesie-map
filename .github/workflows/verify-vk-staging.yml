@@ -1,0 +1,70 @@
+name: Verify published VK Mini App staging URL
+on:
+  workflow_dispatch:
+  push:
+    branches: [vk-mini-app]
+    paths: ['.github/workflows/verify-vk-staging.yml']
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check HTTPS, all assets and framing headers
+        run: |
+          set -euo pipefail
+          base="https://socman2023.github.io/podnebesie-map"
+          ok=0
+          for i in $(seq 1 25); do
+            code=$(curl -sSL --max-time 20 -o /tmp/vk-index.html -w '%{http_code}' "$base/vk/" || true)
+            if [ "$code" = "200" ] && grep -q 'vk-app.js' /tmp/vk-index.html; then ok=1; break; fi
+            echo "Pages deploy pending (attempt $i, HTTP $code)"
+            sleep 10
+          done
+          test "$ok" = "1" || { echo 'VK URL not published'; exit 1; }
+          for file in index.html script.js vk-app.js style.css vendor/vk-bridge/browser.min.js vendor/leaflet/leaflet.js vendor/leaflet/leaflet.css locations.json map-preview.webp map-full.webp images/academia.png; do
+            code=$(curl -sSL --max-time 30 -o /dev/null -w '%{http_code}' "$base/vk/$file")
+            test "$code" = "200" || { echo "$file: HTTP $code"; exit 1; }
+            echo "VK asset available: $file"
+          done
+          curl -fsSL --max-time 20 "$base/vk/locations.json" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert len(d)==128'
+          test "$(curl -sSL --max-time 20 -o /dev/null -w '%{http_code}' "$base/")" = "200"
+          echo "=== /vk/ Response Headers ==="
+          curl -sSI --max-time 20 "$base/vk/" | grep -iE '^(HTTP/|content-security-policy|x-frame-options|content-type|access-control-allow-origin|location:)' || true
+
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install Chromium and runner
+        run: |
+          npm install --no-save @playwright/test@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Smoke test public VK version on mobile and desktop
+        run: |
+          node - <<'NODE'
+          const {chromium} = require('playwright');
+          (async () => {
+            const b=await chromium.launch({headless:true});
+            const base='https://socman2023.github.io/podnebesie-map/vk/';
+            for(const width of [320,390,1024]){
+              const mobile=width<601;
+              const p=await b.newPage({viewport:{width,height:820},isMobile:mobile,hasTouch:mobile,deviceScaleFactor:mobile?2:1});
+              const errors=[];
+              p.on('pageerror',e=>errors.push(e.message));
+              await p.goto(base+'#place=academia',{waitUntil:'domcontentloaded'});
+              await p.locator('#loading-state').waitFor({state:'hidden',timeout:30000});
+              const title=await p.locator('#details-title').innerText();
+              if(title!=='Академия')throw Error('Unexpected direct-link title '+title);
+              const bridge=await p.evaluate(()=>Boolean(window.vkBridge));
+              if(!bridge)throw Error('Bundled VK Bridge unavailable');
+              await p.locator('#search-input').fill('Златоград');
+              await p.locator('#search-results button').first().click();
+              if((await p.locator('#details-title').innerText())!=='Златоград')throw Error('Search broken');
+              const overflow=await p.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+              if(overflow>1)throw Error('Horizontal overflow '+overflow);
+              if(errors.length)throw Error(errors.join('; '));
+              console.log('LIVE OK',width,title,'bridge loaded',bridge,'overflow',overflow);
+              await p.close();
+            }
+            await b.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
