@@ -159,3 +159,47 @@ button:hover, select:hover { background-color: #dec5a2; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* VK Mini Apps: системные insets приходят от VKWebAppUpdateConfig, с запасным env(). */
+.vk-embedded .topbar {
+  padding-top: max(9px, env(safe-area-inset-top), var(--vk-inset-top, 0px));
+  padding-left: max(12px, env(safe-area-inset-left), var(--vk-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right), var(--vk-inset-right, 0px));
+}
+.vk-embedded .details {
+  padding-bottom: max(env(safe-area-inset-bottom), var(--vk-inset-bottom, 0px));
+}
+.details-actions { display: flex; flex-wrap: wrap; margin-top: 16px; }
+.details-actions button {
+  min-height: 44px; border-radius: 7px; border: 1px solid var(--border);
+  padding: 8px 14px; background: #e4cfb0; color: var(--ink);
+  cursor: pointer;
+}
+.action-feedback {
+  position: absolute; left: 50%; bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 1800; transform: translateX(-50%); max-width: calc(100% - 30px);
+  border-radius: 9px; background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow); padding: 12px 18px; font-size: 14px;
+  text-align: center; pointer-events: none;
+}
+@media (max-width: 600px) {
+  /* Отдельный ряд действий: все кнопки остаются доступными на 320px. */
+  .topbar .brand { flex: 1 1 100%; }
+  .topbar .search { flex: 1 1 100%; order: 2; }
+  .topbar .toolbar-actions {
+    flex: 1 1 100%; order: 3; display: flex; gap: 5px;
+    flex-wrap: wrap; margin-left: 0;
+  }
+  .topbar .toolbar-actions select {
+    max-width: none; min-width: 95px; flex: 1 1 105px;
+    font-size: 13px;
+  }
+  .topbar .toolbar-actions button {
+    flex: 1 1 auto; min-width: 68px; font-size: 12px;
+  }
+  .vk-embedded .topbar {
+    padding-top: max(6px, env(safe-area-inset-top), var(--vk-inset-top, 0px));
+    padding-left: max(7px, env(safe-area-inset-left), var(--vk-inset-left, 0px));
+    padding-right: max(7px, env(safe-area-inset-right), var(--vk-inset-right, 0px));
+  }
+}
