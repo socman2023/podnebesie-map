@@ -1,0 +1,46 @@
+name: Test VK Mini App adaptation
+on:
+  workflow_dispatch:
+  push:
+    branches: [vk-mini-app]
+    paths:
+      - '.github/workflows/test-vk-mini-app.yml'
+      - 'index.html'
+      - 'style.css'
+      - 'script.js'
+      - 'vk-app.js'
+      - 'tests/**'
+      - 'vendor/vk-bridge/**'
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test runner
+        run: |
+          npm install --no-save @playwright/test@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Test desktop, mobile and VK Bridge simulation
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/vk-map.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          sleep 2
+          mkdir -p screenshots
+          npx playwright test --config=playwright.config.cjs
+      - name: Keep QA screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vk-map-adaptation-qa
+          path: |
+            screenshots/
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
