@@ -121,7 +121,7 @@ button:hover, select:hover { background-color: #dec5a2; }
 .map-pin--link .map-pin-core { background: #3487d4; border-radius: 3px; }
 .map-pin--selected .map-pin-core { width: 20px; height: 20px; border-color: #fffaf0; box-shadow: 0 0 0 3px #372515; }
 .map-pin:focus-visible { outline: 3px solid #0b6ea0; outline-offset: -4px; border-radius: 50%; }
-@media (max-width: 980px) {
+@media (max-width: 1120px) {
   .brand { flex-basis: auto; }
   .brand-subtitle { display: none; }
   .topbar { flex-wrap: wrap; }
