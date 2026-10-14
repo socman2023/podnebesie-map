@@ -1,0 +1,23 @@
+name: Inspect Pages Hosting
+on:
+  workflow_dispatch:
+  push:
+    branches: [responsive-map-v2]
+    paths: ['.github/workflows/check-pages-setup.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read Pages source without modifications
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          echo "=== PAGE SETTINGS ==="
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/socman2023/podnebesie-map/pages | python3 -c 'import json,sys; x=json.load(sys.stdin); print(json.dumps({k:x.get(k) for k in ("html_url","source","build_type","status","custom_domain")},ensure_ascii=False))'
+          echo "=== PUBLIC ROOT RESPONSE ==="
+          curl -sSLI --max-time 20 -o /dev/null -w 'root_status:%{http_code} url:%{url_effective} content_type:%{content_type}\n' https://socman2023.github.io/podnebesie-map/
+          echo "=== GITHACK BRANCH RESPONSE ==="
+          curl -sSLI --max-time 20 -o /dev/null -w 'preview_status:%{http_code} url:%{url_effective} content_type:%{content_type}\n' https://raw.githack.com/socman2023/podnebesie-map/responsive-map-v2/index.html
