@@ -35,7 +35,7 @@ test('normal web keeps the standalone map, clean links and no VK favorites', asy
 });
 
 test('VK init, direct location routing, favorite and sharing without profile requests', async ({ browser }) => {
-  for (const width of [320, 390, 900]) {
+  for (const width of [320, 390, 900, 1024]) {
     const context=await browser.newContext({
       viewport:{width,height:780},isMobile:width<600,hasTouch:width<600,
       deviceScaleFactor:width<600?2:1, permissions:['clipboard-read','clipboard-write']
