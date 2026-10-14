@@ -1,0 +1,47 @@
+name: Vendor verified Leaflet assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [responsive-map-v2]
+    paths: ['.github/workflows/vendor-leaflet.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: responsive-map-v2
+      - name: Download Leaflet 1.9.4
+        run: |
+          mkdir -p vendor/leaflet/images
+          curl -fsSL --retry 4 https://unpkg.com/leaflet@1.9.4/dist/leaflet.css -o vendor/leaflet/leaflet.css
+          curl -fsSL --retry 4 https://unpkg.com/leaflet@1.9.4/dist/leaflet.js -o vendor/leaflet/leaflet.js
+          for name in marker-icon.png marker-icon-2x.png marker-shadow.png layers.png layers-2x.png; do
+            curl -fsSL --retry 4 "https://unpkg.com/leaflet@1.9.4/dist/images/$name" -o "vendor/leaflet/images/$name"
+          done
+          python3 - <<'PY'
+          import base64, hashlib
+          from pathlib import Path
+          expected = {
+            'vendor/leaflet/leaflet.css': 'p4NxAoJBhIIN+hmNHrzxKBbJGVON3Kf6FwgdF1Zx/nM=',
+            'vendor/leaflet/leaflet.js': '20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
+          }
+          for file, digest in expected.items():
+            data = Path(file).read_bytes()
+            actual = base64.b64encode(hashlib.sha256(data).digest()).decode()
+            if actual != digest:
+              raise SystemExit(f'Leaflet digest mismatch for {file}: {actual}')
+            print(file, len(data), 'bytes; verified SHA256')
+          PY
+      - name: Commit verified local library
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/leaflet
+          git commit -m "Bundle verified Leaflet 1.9.4 assets for mobile and desktop"
+          git push origin HEAD:responsive-map-v2
