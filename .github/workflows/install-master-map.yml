@@ -1,0 +1,56 @@
+name: Install master-quality map image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [responsive-map-v2]
+    paths:
+      - '.github/workflows/install-master-map.yml'
+      - 'assets/master-map/**'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: responsive-map-v2
+
+      - name: Install Pillow
+        run: python3 -m pip install 'Pillow>=11,<13'
+
+      - name: Restore original master-derived WebP
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib
+          from pathlib import Path
+          from PIL import Image
+          parts = sorted(Path('assets/master-map').glob('map-full.b64.part*'))
+          if len(parts) != 9:
+              raise RuntimeError(f'Expected 9 parts, received {len(parts)}')
+          encoded = b''.join(part.read_bytes() for part in parts)
+          image_bytes = base64.b64decode(encoded, validate=True)
+          digest = hashlib.sha256(image_bytes).hexdigest()
+          expected = 'bbe918334f8f1c4ad0788a7e1e3e8c01e8124a930971c9a12e1f9811a08b3eff'
+          if digest != expected:
+              raise RuntimeError(f'Unexpected master WebP SHA256: {digest}')
+          output = Path('map-full.webp')
+          output.write_bytes(image_bytes)
+          with Image.open(output) as image:
+              if image.format != 'WEBP' or image.size != (6670, 4764):
+                  raise RuntimeError(f'Unexpected WebP dimensions/format: {image.format} {image.size}')
+          print(f'Installed {output} ({len(image_bytes)} bytes, SHA256 {digest})')
+          PY
+
+      - name: Save WebP and clean staging files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add map-full.webp
+          git rm -r assets/master-map
+          git commit -m "Install full-resolution map from original 34 MB master"
+          git push origin HEAD:responsive-map-v2
