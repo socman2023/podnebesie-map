@@ -1,0 +1,32 @@
+name: Bundle pinned VK Bridge
+on:
+  workflow_dispatch:
+  push:
+    branches: [vk-mini-app]
+    paths: ['.github/workflows/vendor-vk-bridge.yml']
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: vk-mini-app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned VK Bridge browser bundle
+        run: |
+          set -euo pipefail
+          mkdir -p vendor/vk-bridge
+          tgz=$(npm pack --silent @vkontakte/vk-bridge@2.15.12)
+          tar -xOzf "$tgz" package/dist/browser.min.js > vendor/vk-bridge/browser.min.js
+          test $(wc -c < vendor/vk-bridge/browser.min.js) -gt 3000
+          sha256sum vendor/vk-bridge/browser.min.js
+      - name: Save library to working branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/vk-bridge/browser.min.js
+          git diff --cached --quiet || { git commit -m "Bundle VK Bridge 2.15.12 for offline-safe startup"; git push origin HEAD:vk-mini-app; }
