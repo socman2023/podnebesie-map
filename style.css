@@ -203,3 +203,11 @@ button:hover, select:hover { background-color: #dec5a2; }
     padding-right: max(7px, env(safe-area-inset-right), var(--vk-inset-right, 0px));
   }
 }
+
+@media (max-width: 600px) {
+  /* В мини-приложении оставляем место для карты даже при длинных описаниях. */
+  .vk-embedded .details {
+    max-height: 52vh;
+    max-height: min(52dvh, 460px);
+  }
+}
