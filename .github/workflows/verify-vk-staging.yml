@@ -39,17 +39,21 @@ jobs:
           npm install --no-save @playwright/test@1.55.1
           npx playwright install --with-deps chromium
       - name: Smoke test public VK version on mobile and desktop
+        timeout-minutes: 3
         run: |
-          node - <<'NODE'
+          timeout 150s node - <<'NODE'
           const {chromium} = require('playwright');
+          let browserInstance;
           (async () => {
             const b=await chromium.launch({headless:true});
+            browserInstance=b;
             const base='https://socman2023.github.io/podnebesie-map/vk/';
             for(const width of [320,390,1024]){
               const mobile=width<601;
               const p=await b.newPage({viewport:{width,height:820},isMobile:mobile,hasTouch:mobile,deviceScaleFactor:mobile?2:1});
               const errors=[];
               p.on('pageerror',e=>errors.push(e.message));
+              p.setDefaultTimeout(15000);
               await p.goto(base+'#place=academia',{waitUntil:'domcontentloaded'});
               await p.locator('#loading-state').waitFor({state:'hidden',timeout:30000});
               const title=await p.locator('#details-title').innerText();
@@ -66,5 +70,5 @@ jobs:
               await p.close();
             }
             await b.close();
-          })().catch(e=>{console.error(e);process.exitCode=1});
+          })().catch(async e=>{console.error(e);if(browserInstance)await browserInstance.close().catch(()=>{});process.exitCode=1});
           NODE
