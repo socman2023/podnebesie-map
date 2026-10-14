@@ -9,6 +9,9 @@ on:
       - 'style.css'
       - 'script.js'
       - 'vk-app.js'
+      - 'playwright.config.cjs'
+      - 'package.json'
+      - 'tools/build-vk.mjs'
       - 'tests/**'
       - 'vendor/vk-bridge/**'
 permissions:
@@ -25,6 +28,13 @@ jobs:
         run: |
           npm install --no-save @playwright/test@1.55.1
           npx playwright install --with-deps chromium
+      - name: Validate JavaScript and standalone VK build
+        run: |
+          node --check vk-app.js
+          node --check script.js
+          npm run build
+          test -f build-vk/vendor/vk-bridge/browser.min.js
+          test -f build-vk/map-full.webp
       - name: Test desktop, mobile and VK Bridge simulation
         run: |
           set -euo pipefail
