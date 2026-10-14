@@ -342,6 +342,7 @@ function initMap() {
   map = L.map(mapElement, {
     crs: L.CRS.Simple, minZoom: -7, maxZoom: 1.25,
     zoomSnap: 0, zoomDelta: 0.5, scrollWheelZoom: true,
+    zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false,
     zoomControl: false, attributionControl: false,
     preferCanvas: false, keyboard: true
   });
@@ -365,7 +366,7 @@ function initMap() {
     const fillZoom = map.getBoundsZoom(imageBounds, true, L.point(12, 12));
     map.setZoom(Math.min(map.getMaxZoom(), Math.max(fitZoom + 1.15, fillZoom)), { animate: false });
   }
-  map.setMaxBounds(imageBounds.pad(window.matchMedia('(max-width: 600px)').matches ? 0.35 : 0.08));
+  // Без maxBounds: нужно уметь смещать точки у края карты выше мобильной карточки.
   for (const loc of locations) markers.set(loc.id, makeMarker(loc));
   map.on('zoomend moveend', renderMarkers);
   window.addEventListener('resize', updateFitZoom);
