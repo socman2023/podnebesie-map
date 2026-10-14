@@ -220,7 +220,7 @@ function goToLocation(loc, addHistory) {
   if (window.matchMedia('(max-width: 600px)').matches && !details.hidden) {
     const sheetHeight = details.getBoundingClientRect().height;
     const mapHeight = map.getSize().y;
-    map.panBy([0, -Math.min(sheetHeight / 2, mapHeight * 0.34)], { animate: false });
+    map.panBy([0, Math.min(sheetHeight / 2, mapHeight * 0.34)], { animate: false });
   }
 }
 
