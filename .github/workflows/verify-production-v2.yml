@@ -1,0 +1,102 @@
+name: Verify production map v2 after release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [responsive-map-v2]
+    paths: ['.github/workflows/verify-production-v2.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  live-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public GitHub Pages HTML and assets
+        run: |
+          set -euo pipefail
+          base="https://socman2023.github.io/podnebesie-map"
+          success=0
+          for attempt in $(seq 1 25); do
+            code=$(curl --max-time 20 -sSL -o /tmp/live-index.html -w '%{http_code}' "$base/" || true)
+            if [ "$code" = "200" ] && grep -q 'vendor/leaflet/leaflet.js' /tmp/live-index.html && grep -q 'Интерактивная карта Поднебесья' /tmp/live-index.html; then
+              success=1
+              echo "Production v2 available on attempt $attempt"
+              break
+            fi
+            echo "Production Pages publishing; attempt $attempt HTTP=$code"
+            sleep 10
+          done
+          test "$success" = 1
+          for path in index.html script.js style.css locations.json vendor/leaflet/leaflet.css vendor/leaflet/leaflet.js map-preview.webp map-full.webp; do
+            result=$(curl --max-time 30 -sSL -o /dev/null -w '%{http_code}' "$base/$path")
+            test "$result" = 200 || { echo "HTTP $result for $path"; exit 1; }
+            echo "HTTP 200 /$path"
+          done
+          curl --max-time 20 -fsSL "$base/locations.json" | python3 -c 'import json,sys; p=json.load(sys.stdin); assert len(p)==128; print("128 locations intact")'
+          test "$(curl --max-time 20 -sSL -o /dev/null -w '%{http_code}' "$base/preview/")" = "200"
+          echo "Preview remains accessible"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install browser test runner
+        run: |
+          npm install --no-save @playwright/test@1.55.1
+          npx playwright install --with-deps chromium
+
+      - name: Test live desktop and mobile maps
+        run: |
+          mkdir -p production-screenshots
+          node - <<'NODE'
+          const {chromium} = require('playwright');
+          (async ()=>{
+            const browser=await chromium.launch({headless:true});
+            const url='https://socman2023.github.io/podnebesie-map/';
+            for(const width of [390,1440]){
+              const mobile=width===390;
+              const page=await browser.newPage({
+                viewport:{width,height:mobile?844:900},
+                isMobile:mobile,hasTouch:mobile,deviceScaleFactor:mobile?2:1
+              });
+              const errors=[];
+              page.on('pageerror',e=>errors.push(e.message));
+              const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
+              if(response.status()!==200)throw Error('HTML '+response.status());
+              await page.locator('#loading-state').waitFor({state:'hidden',timeout:25000});
+              await page.locator('#search-input').fill('Академия');
+              await page.locator('#search-results button').first().click();
+              const title=await page.locator('#details-title').innerText();
+              if(title!=='Академия')throw Error('Wrong title '+title);
+              if(mobile){
+                const pin=await page.locator('.map-pin--selected').first().boundingBox();
+                const card=await page.locator('#details').boundingBox();
+                if(!pin || !card || pin.y+pin.height/2 >= card.y-8)
+                  throw Error('Selected location hidden under mobile bottom sheet');
+              }
+              const imageOk=await page.locator('.leaflet-image-layer').first().evaluate(async image=>{
+                if(!image.complete)await new Promise(resolve=>{
+                  image.addEventListener('load',resolve,{once:true});
+                  image.addEventListener('error',resolve,{once:true});
+                });
+                return image.naturalWidth>0;
+              });
+              if(!imageOk)throw Error('Map underlay failed to load');
+              if(errors.length)throw Error('JS errors '+errors.join('; '));
+              await page.screenshot({path:'production-screenshots/'+(mobile?'mobile':'desktop')+'.png'});
+              console.log('VERIFIED',width,title,'base-map loaded',imageOk);
+              await page.close();
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+
+      - name: Save live screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-v2-desktop-mobile
+          path: production-screenshots/
+          if-no-files-found: ignore
