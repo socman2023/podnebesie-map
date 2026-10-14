@@ -63,6 +63,7 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
 
     await page.locator('#details-close').click();
     await expect(page.locator('#details')).toBeHidden();
+    await page.locator('#search-input').fill('');
     await page.locator('#type-filter').selectOption('city');
     await page.locator('#list-toggle').click();
     await expect(page.locator('#list-panel')).toBeVisible();
