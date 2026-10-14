@@ -101,6 +101,9 @@
       if (detail.type === 'VKWebAppChangeFragment') {
         const fragment = detail.data && detail.data.location;
         if (typeof fragment !== 'string') return;
+        // Ответ на наш VKWebAppSetLocation не должен повторно открывать карточку
+        // и сбрасывать внутреннюю историю переходов.
+        if (encodeRoute(decodeRoute(fragment)) === window.location.hash) return;
         applyIncoming(fragment, true);
       }
       if (detail.type === 'VKWebAppUpdateConfig') {
