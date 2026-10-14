@@ -1,0 +1,6 @@
+node_modules/
+build-vk/
+playwright-report/
+test-results/
+screenshots/
+vk-hosting-config.json
