@@ -43,7 +43,7 @@ test('VK init, direct location routing, favorite and sharing without profile req
     const page=await context.newPage();
     const errors=[];
     page.on('pageerror',e=>errors.push(e.message));
-    await launchVK(page, BASE + '/?vk_app_id=123456&vk_platform=mobile_android&sign=secret#place=academia');
+    await launchVK(page, BASE + '/?vk_app_id=54823637&vk_platform=mobile_android&sign=secret#place=academia');
     await expect(page.locator('#details-title')).toHaveText('Академия');
     await expect(page.locator('#vk-favorite')).toBeVisible();
     await expect(page.locator('#location-share')).toBeVisible();
@@ -56,7 +56,7 @@ test('VK init, direct location routing, favorite and sharing without profile req
     let calls=await page.evaluate(() => window.__vkCalls);
     expect(calls.some(c=>c.method==='VKWebAppInit')).toBeTruthy();
     expect(calls.some(c=>c.method==='VKWebAppShare' &&
-      c.args.link==='https://vk.com/app123456#place=academia')).toBeTruthy();
+      c.args.link==='https://vk.com/app54823637#place=academia')).toBeTruthy();
     expect(calls.some(c=>c.method==='VKWebAppAddToFavorites')).toBeTruthy();
 
     await page.locator('#search-input').fill('Златоград');
@@ -91,7 +91,7 @@ test('VK init, direct location routing, favorite and sharing without profile req
 });
 
 test('can enter another place from VK fragment event and return to map', async ({ page })=>{
-  await launchVK(page, BASE + '/?vk_app_id=123456&vk_platform=desktop_web');
+  await launchVK(page, BASE + '/?vk_app_id=54823637&vk_platform=desktop_web');
   await expect(page.locator('#details')).toBeHidden();
   await page.evaluate(()=>window.__vkEmit({
     detail:{type:'VKWebAppChangeFragment',data:{location:'#place=academia'}}
@@ -101,4 +101,10 @@ test('can enter another place from VK fragment event and return to map', async (
     detail:{type:'VKWebAppChangeFragment',data:{location:''}}
   }));
   await expect(page.locator('#details')).toBeHidden();
+});
+
+test('registered VK ID remains fixed even with untrusted launch parameters', async ({ page }) => {
+  await launchVK(page, BASE + '/?vk_app_id=54823637&vk_platform=mobile_android#place=academia');
+  const link = await page.evaluate(() => window.PodnebesieVK.getLink('academia'));
+  expect(link).toBe('https://vk.com/app54823637#place=academia');
 });
