@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [vk-mini-app]
-    paths: ['.github/workflows/verify-vk-staging.yml']
+    paths: ['.github/workflows/verify-vk-staging.yml', 'style.css', 'tests/vk-mini-app.spec.cjs']
 permissions:
   contents: read
 jobs:
@@ -22,6 +22,17 @@ jobs:
             sleep 10
           done
           test "$ok" = "1" || { echo 'VK URL not published'; exit 1; }
+          # Ensure CDN Pages has caught up with the latest responsive CSS.
+          css_ok=0
+          for i in $(seq 1 25); do
+            curl -fsSL --max-time 20 "$base/vk/style.css?check=54823637" -o /tmp/vk-current-style.css || true
+            if grep -q '@media (max-width: 1120px)' /tmp/vk-current-style.css; then
+              css_ok=1; break
+            fi
+            echo "Waiting for fixed 1024px stylesheet ($i)"
+            sleep 8
+          done
+          test "$css_ok" = "1" || { echo 'VK responsive CSS not yet deployed'; exit 1; }
           for file in index.html script.js vk-app.js style.css vendor/vk-bridge/browser.min.js vendor/leaflet/leaflet.js vendor/leaflet/leaflet.css locations.json map-preview.webp map-full.webp images/academia.png; do
             code=$(curl -sSL --max-time 30 -o /dev/null -w '%{http_code}' "$base/vk/$file")
             test "$code" = "200" || { echo "$file: HTTP $code"; exit 1; }
@@ -48,7 +59,7 @@ jobs:
             const b=await chromium.launch({headless:true});
             browserInstance=b;
             const base='https://socman2023.github.io/podnebesie-map/vk/';
-            for(const width of [320,390,1024]){
+            for(const width of [320,390,1024,1180]){
               const mobile=width<601;
               const p=await b.newPage({viewport:{width,height:820},isMobile:mobile,hasTouch:mobile,deviceScaleFactor:mobile?2:1});
               const errors=[];
