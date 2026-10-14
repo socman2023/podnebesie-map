@@ -28,7 +28,7 @@ jobs:
           import base64, hashlib
           from pathlib import Path
           expected = {
-            'vendor/leaflet/leaflet.css': 'p4NxAoJBhIIN+hmNHrzxKBbJGVON3Kf6FwgdF1Zx/nM=',
+            'vendor/leaflet/leaflet.css': 'p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=',
             'vendor/leaflet/leaflet.js': '20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
           }
           for file, digest in expected.items():
