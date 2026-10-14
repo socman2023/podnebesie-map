@@ -66,6 +66,22 @@ test('mobile: 320px and 390px are horizontally contained and cards usable', asyn
     const sheet = await page.locator('#details').boundingBox();
     expect(pin).not.toBeNull();
     expect(sheet).not.toBeNull();
+    const debug = await page.evaluate(() => {
+      const target = Array.from(document.querySelectorAll('.leaflet-marker-icon')).find(e => e.classList.contains('map-pin--selected'));
+      return {
+        viewport: [innerWidth, innerHeight],
+        mapDOM: document.getElementById('map').getBoundingClientRect().toJSON(),
+        pinDOM: target ? target.getBoundingClientRect().toJSON() : null,
+        sheetDOM: document.getElementById('details').getBoundingClientRect().toJSON(),
+        center: typeof map !== 'undefined' ? map.getCenter() : null,
+        currentZoom: typeof map !== 'undefined' ? map.getZoom() : null,
+        fitZoom: typeof fitZoom !== 'undefined' ? fitZoom : null,
+        selectedId: typeof selectedId !== 'undefined' ? selectedId : null,
+        pinCoords: typeof map !== 'undefined' && typeof coord !== 'undefined' && typeof byId !== 'undefined' && byId.has(selectedId) ? map.latLngToContainerPoint(coord(byId.get(selectedId))) : null,
+        imageLayer: Array.from(document.querySelectorAll('.leaflet-image-layer')).map(x => x.getBoundingClientRect().toJSON())
+      };
+    });
+    console.log('MOBILE_DEBUG', width, JSON.stringify(debug));
     expect(pin.y + pin.height / 2).toBeLessThan(sheet.y - 8);
     await page.screenshot({ path: 'screenshots/mobile-' + width + '.png' });
 
