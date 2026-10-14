@@ -1,0 +1,11 @@
+{
+  "name": "podnebesie-vk-mini-app",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "./",
+  "description": "VK Mini App adaptation of the Podnebesie fantasy world map",
+  "scripts": {
+    "build": "node tools/build-vk.mjs",
+    "test": "playwright test --config=playwright.config.cjs"
+  }
+}
