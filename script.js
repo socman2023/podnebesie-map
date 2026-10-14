@@ -214,8 +214,14 @@ function goToLocation(loc, addHistory) {
   if (!map || !loc) return;
   if (!matchesFilter(loc)) typeFilter.value = 'all';
   const targetZoom = Math.min(map.getMaxZoom(), Math.max(map.getZoom(), fitZoom + 2.5));
-  map.setView(coord(loc), targetZoom, { animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+  map.setView(coord(loc), targetZoom, { animate: false });
   showCard(loc, addHistory);
+  // Смещаем выбранное место в видимую часть карты НАД мобильной карточкой.
+  if (window.matchMedia('(max-width: 600px)').matches && !details.hidden) {
+    const sheetHeight = details.getBoundingClientRect().height;
+    const mapHeight = map.getSize().y;
+    map.panBy([0, Math.min(sheetHeight / 2, mapHeight * 0.34)], { animate: false });
+  }
 }
 
 function makeMarker(loc) {
@@ -232,7 +238,7 @@ function makeMarker(loc) {
   const name = document.createElement('span');
   name.textContent = loc.title;
   marker.bindTooltip(name, { direction: 'top', offset: [0, -12] });
-  marker.on('click', () => showCard(loc, true));
+  marker.on('click', () => goToLocation(loc, true));
   marker.on('add', () => {
     const el = marker.getElement();
     if (!el) return;
@@ -243,7 +249,7 @@ function makeMarker(loc) {
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        showCard(loc, true);
+        goToLocation(loc, true);
       }
     });
   });
@@ -335,7 +341,7 @@ function initMap() {
   imageBounds = L.latLngBounds([0, 0], [MAP_HEIGHT, MAP_WIDTH]);
   map = L.map(mapElement, {
     crs: L.CRS.Simple, minZoom: -7, maxZoom: 1.25,
-    zoomSnap: 0.25, zoomDelta: 0.5, scrollWheelZoom: true,
+    zoomSnap: 0, zoomDelta: 0.5, scrollWheelZoom: true,
     zoomControl: false, attributionControl: false,
     preferCanvas: false, keyboard: true
   });
@@ -353,6 +359,13 @@ function initMap() {
   map.fitBounds(imageBounds, { padding: [18, 18], animate: false });
   fitZoom = map.getBoundsZoom(imageBounds, false, L.point(18, 18));
   map.setMinZoom(fitZoom);
+  // На телефоне карта стартует в удобном масштабе, а не микроскопическим обзором.
+  // Кнопка «Вся карта» возвращает к общему виду в один тап.
+  if (window.matchMedia('(max-width: 600px)').matches) {
+    const fillZoom = map.getBoundsZoom(imageBounds, true, L.point(12, 12));
+    map.setZoom(Math.min(map.getMaxZoom(), Math.max(fitZoom + 1.15, fillZoom)), { animate: false });
+  }
+  map.setMaxBounds(imageBounds.pad(0.04));
   for (const loc of locations) markers.set(loc.id, makeMarker(loc));
   map.on('zoomend moveend', renderMarkers);
   window.addEventListener('resize', updateFitZoom);
