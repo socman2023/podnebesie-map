@@ -9,11 +9,12 @@
 (function () {
   const launch = new URLSearchParams(window.location.search);
   const bridge = window.vkBridge || null;
-  const vkAppId = /^\d+$/.test(launch.get('vk_app_id') || '') ? launch.get('vk_app_id') : null;
+  const vkAppId = '54823637';
+  const verifiedLaunchId = launch.get('vk_app_id') === vkAppId;
   const embedded = Boolean(
     bridge && typeof bridge.isEmbedded === 'function' && bridge.isEmbedded()
   );
-  const inVK = Boolean(bridge && (embedded || (vkAppId && launch.has('vk_platform'))));
+  const inVK = Boolean(bridge && (embedded || (verifiedLaunchId && launch.has('vk_platform'))));
   let routeHandlers = null;
   let applyingExternalRoute = false;
   let lastVKLocation = null;
