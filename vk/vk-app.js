@@ -178,14 +178,41 @@
       : 'Не удалось скопировать автоматически. Выделите ссылку и скопируйте её вручную.';
   }
 
+  // VK Bridge отклоняет Promise не только при техническом сбое, но и когда
+  // пользователь закрывает стандартное окно отправки крестиком.
+  // В этом случае не показываем резервную панель копирования.
+  function isShareCancelled(error) {
+    if (!error) return false;
+    if (error.name === 'AbortError') return true;
+
+    const details = error.error_data || error.data?.error_data ||
+      error.detail?.data?.error_data || {};
+    const type = error.error_type || error.data?.error_type ||
+      error.detail?.data?.error_type;
+    const reason = [
+      details.error_reason,
+      details.error_description,
+      error.reason,
+      error.message,
+      error.error_reason
+    ].filter(v => typeof v === 'string').join(' ');
+
+    // В клиентах ВК распространён код client_error / 4 ("User denied").
+    if (type === 'client_error' && Number(details.error_code) === 4) return true;
+    return /abort|cancel|dismiss|user denied|user rejected|user closed|отмен|отклон|закрыл/i.test(reason);
+  }
+
   async function share(id) {
     const link = getLink(id);
     if (inVK) {
       try {
         await bridgeSend('VKWebAppShare', { link });
         return;
-      } catch (_) {
-        // Вместо системного prompt — панель с адресом и кнопкой копирования.
+      } catch (error) {
+        // Закрытие штатного окна ВК — нормальная отмена, а не повод
+        // предлагать копирование ссылки.
+        if (isShareCancelled(error)) return;
+        // Только при настоящей ошибке/недоступности показываем запасной способ.
         showLinkPanel(link);
         return;
       }
