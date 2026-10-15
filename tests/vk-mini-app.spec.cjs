@@ -108,3 +108,86 @@ test('registered VK ID remains fixed even with untrusted launch parameters', asy
   const link = await page.evaluate(() => window.PodnebesieVK.getLink('academia'));
   expect(link).toBe('https://vk.com/app54823637#place=academia');
 });
+
+
+test('desktop VK window uses compact cards and list without shrinking touch screens', async ({ browser }) => {
+  const context=await browser.newContext({viewport:{width:850,height:620}});
+  const page=await context.newPage();
+  await launchVK(page, BASE+'/?vk_app_id=54823637&vk_platform=desktop_web#place=ardan');
+  await expect(page.locator('#details-title')).toHaveText('Ардан');
+  const dimensions=await page.evaluate(()=>{
+    const get=id=>document.getElementById(id).getBoundingClientRect();
+    const img=get('details-image');
+    return {
+      panel:get('details').width,
+      imageHeight:img.height,
+      toolbar:get('vk-favorite').height,
+      cssLabel:document.getElementById('vk-favorite').textContent,
+      desktopScreen:window.innerWidth
+    };
+  });
+  expect(dimensions.panel).toBeLessThanOrEqual(320);
+  expect(dimensions.imageHeight).toBeLessThanOrEqual(180);
+  expect(dimensions.cssLabel).toBe('В избранное ВК');
+  await page.locator('#list-toggle').click();
+  await expect(page.locator('#list-panel')).toBeVisible();
+  const listWidth=await page.locator('#list-panel').evaluate(e=>e.getBoundingClientRect().width);
+  expect(listWidth).toBeLessThanOrEqual(320);
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await context.close();
+});
+
+test('VK sharing rejection opens own copy-link panel, never browser prompt', async ({ page }) => {
+  await launchVK(page, BASE+'/?vk_app_id=54823637&vk_platform=desktop_web#place=academia');
+  await page.evaluate(()=>{
+    window.__copied='';
+    window.__nativePrompt=0;
+    window.prompt=()=>{window.__nativePrompt++;throw Error('Browser prompt must never open');};
+    window.vkBridge.send=(method,args)=>{
+      if (method==='VKWebAppShare') return Promise.reject({error_type:'unsupported'});
+      window.__vkCalls.push({method,args});
+      return Promise.resolve({result:true});
+    };
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+      writeText:async text=>{window.__copied=text;}
+    }});
+  });
+  await page.locator('#location-share').click();
+  await expect(page.locator('#share-panel')).toBeVisible();
+  await expect(page.locator('#share-link')).toHaveValue('https://vk.com/app54823637#place=academia');
+  await page.locator('#share-copy').click();
+  await expect(page.locator('#share-copy-status')).toHaveText('Ссылка скопирована.');
+  expect(await page.evaluate(()=>window.__copied)).toBe('https://vk.com/app54823637#place=academia');
+  expect(await page.evaluate(()=>window.__nativePrompt)).toBe(0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#share-panel')).toBeHidden();
+  await expect(page.locator('#details')).toBeVisible();
+  await page.locator('#vk-share').click();
+  await expect(page.locator('#share-link')).toHaveValue('https://vk.com/app54823637');
+  await page.locator('#share-close').click();
+  await expect(page.locator('#share-panel')).toBeHidden();
+});
+
+test('manual link remains selectable when clipboard is denied', async ({ page }) => {
+  await launchVK(page, BASE+'/?vk_app_id=54823637&vk_platform=desktop_web#place=academia');
+  await page.evaluate(()=>{
+    window.vkBridge.send=(method)=>{
+      if(method==='VKWebAppShare')return Promise.reject(new Error('Share denied'));
+      return Promise.resolve({});
+    };
+    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+      writeText:()=>Promise.reject(new Error('Permission denied'))
+    }});
+    document.execCommand=()=>false;
+    window.prompt=()=>{throw Error('Unexpected prompt');};
+  });
+  await page.locator('#vk-share').click();
+  await expect(page.locator('#share-panel')).toBeVisible();
+  await page.locator('#share-copy').click();
+  await expect(page.locator('#share-copy-status')).toContainText('скопируйте её вручную');
+  const selected=await page.locator('#share-link').evaluate(el=>{
+    return el.selectionStart===0 && el.selectionEnd===el.value.length;
+  });
+  expect(selected).toBeTruthy();
+});
