@@ -39,7 +39,7 @@
         </select>
         <button id="list-toggle" type="button" aria-expanded="false" aria-controls="list-panel">Список</button>
         <button id="vk-share" type="button" title="Поделиться картой" hidden>Поделиться</button>
-        <button id="vk-favorite" type="button" title="Добавить карту в избранное ВКонтакте" hidden>В избранное</button>
+        <button id="vk-favorite" type="button" title="Добавить приложение в избранное ВКонтакте" hidden>В избранное ВК</button>
         <button id="reset-view" type="button" title="Показать всю карту" aria-label="Показать всю карту">Вся карта</button>
       </div>
     </header>
@@ -49,6 +49,19 @@
       <div id="loading-state" class="loading-state" role="status">Загружаем карту Поднебесья…</div>
       <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
       <div id="action-feedback" class="action-feedback" role="status" aria-live="polite" hidden></div>
+      <section id="share-panel" class="share-panel" role="dialog" aria-modal="false" aria-labelledby="share-panel-title" hidden>
+        <div class="share-panel-heading">
+          <h2 id="share-panel-title">Ссылка на Поднебесье</h2>
+          <button id="share-close" type="button" aria-label="Закрыть панель со ссылкой">×</button>
+        </div>
+        <p>Отправка через ВКонтакте недоступна. Можно скопировать ссылку.</p>
+        <label for="share-link">Адрес для отправки</label>
+        <input id="share-link" type="text" readonly spellcheck="false" autocomplete="off">
+        <div class="share-panel-actions">
+          <button id="share-copy" type="button">Скопировать ссылку</button>
+        </div>
+        <p id="share-copy-status" role="status" aria-live="polite" hidden></p>
+      </section>
 
       <section id="list-panel" class="list-panel" aria-label="Список объектов карты" hidden>
         <div class="panel-heading">

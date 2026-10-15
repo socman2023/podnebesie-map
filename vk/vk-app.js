@@ -132,27 +132,73 @@
     return window.location.origin + window.location.pathname + fragment;
   }
 
+  function showLinkPanel(link) {
+    const panel = document.getElementById('share-panel');
+    const field = document.getElementById('share-link');
+    const status = document.getElementById('share-copy-status');
+    if (!panel || !field) return;
+    field.value = link;
+    if (status) {
+      status.textContent = '';
+      status.hidden = true;
+    }
+    panel.hidden = false;
+    field.focus({ preventScroll: true });
+    field.select();
+  }
+
+  function hideLinkPanel() {
+    const panel = document.getElementById('share-panel');
+    if (panel) panel.hidden = true;
+  }
+
+  async function copyDisplayedLink() {
+    const field = document.getElementById('share-link');
+    const status = document.getElementById('share-copy-status');
+    if (!field || !status || !field.value) return;
+    let copied = false;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        await navigator.clipboard.writeText(field.value);
+        copied = true;
+      } catch (_) { /* WebView может запретить Clipboard API. */ }
+    }
+    if (!copied) {
+      try {
+        field.focus({ preventScroll: true });
+        field.select();
+        // Старые WebView иногда поддерживают копирование только через execCommand.
+        copied = typeof document.execCommand === 'function' &&
+          document.execCommand('copy') === true;
+      } catch (_) { /* Оставим поле выделенным для ручного копирования. */ }
+    }
+    status.hidden = false;
+    status.textContent = copied
+      ? 'Ссылка скопирована.'
+      : 'Не удалось скопировать автоматически. Выделите ссылку и скопируйте её вручную.';
+  }
+
   async function share(id) {
     const link = getLink(id);
     if (inVK) {
       try {
         await bridgeSend('VKWebAppShare', { link });
         return;
-      } catch (_) { /* Пользователь отменил или клиент не поддерживает. */ }
+      } catch (_) {
+        // Вместо системного prompt — панель с адресом и кнопкой копирования.
+        showLinkPanel(link);
+        return;
+      }
     }
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Карта Поднебесья', url: link });
         return;
-      } catch (_) { /* На некоторых платформах Web Share недоступен. */ }
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+      }
     }
-    try {
-      await navigator.clipboard.writeText(link);
-      showNotice('Ссылка скопирована');
-    } catch (_) {
-      // Для нестандартных WebView — доступная пользователю ручная копия.
-      window.prompt('Скопируйте ссылку:', link);
-    }
+    showLinkPanel(link);
   }
 
   function addToFavorites() {
@@ -165,6 +211,23 @@
     const shareButton = document.getElementById('vk-share');
     const favoriteButton = document.getElementById('vk-favorite');
     const locationShareButton = document.getElementById('location-share');
+    const closeShareButton = document.getElementById('share-close');
+    const copyShareButton = document.getElementById('share-copy');
+    const shareField = document.getElementById('share-link');
+    if (closeShareButton) closeShareButton.addEventListener('click', hideLinkPanel);
+    if (copyShareButton) copyShareButton.addEventListener('click', copyDisplayedLink);
+    if (shareField) {
+      shareField.addEventListener('click', () => shareField.select());
+      shareField.addEventListener('focus', () => shareField.select());
+    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      const panel = document.getElementById('share-panel');
+      if (panel && !panel.hidden) {
+        event.stopImmediatePropagation();
+        hideLinkPanel();
+      }
+    }, true);
     if (shareButton) {
       shareButton.hidden = false;
       shareButton.addEventListener('click', () => share(null));

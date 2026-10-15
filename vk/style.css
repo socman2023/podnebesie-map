@@ -211,3 +211,77 @@ button:hover, select:hover { background-color: #dec5a2; }
     max-height: min(52dvh, 460px);
   }
 }
+
+
+/* Компактная вёрстка внутри desktop-панели VK, а не на телефонах. */
+@media (min-width: 601px) {
+  .vk-embedded .topbar { gap: 8px; padding: 7px 10px; }
+  .vk-embedded .brand h1 { font-size: 19px; }
+  .vk-embedded .toolbar-actions { gap: 5px; }
+  .vk-embedded .toolbar-actions button,
+  .vk-embedded .toolbar-actions select {
+    min-height: 40px; padding: 7px 9px; font-size: 13px;
+  }
+  .vk-embedded .toolbar-actions select { max-width: 145px; }
+  .vk-embedded .search input, .vk-embedded .search > button { height: 40px; }
+  .vk-embedded .list-panel,
+  .vk-embedded .details {
+    top: 9px; bottom: 9px; width: min(318px, calc(100% - 20px));
+  }
+  .vk-embedded .panel-heading { padding: 7px 10px 0; }
+  .vk-embedded .panel-heading h2 { font-size: 18px; }
+  .vk-embedded .panel-hint { padding: 0 11px 7px; font-size: 12px; }
+  .vk-embedded .details-header { padding: 2px 7px 0; }
+  .vk-embedded .details-scroll { padding: 0 12px 16px; }
+  .vk-embedded .details h2 { font-size: 21px; margin: 4px 0 8px; }
+  .vk-embedded .details img { max-height: 175px; margin-bottom: 9px; }
+  .vk-embedded .details-description { font-size: 14px; line-height: 1.46; }
+  .vk-embedded .details-links { margin-top: 10px; }
+  .vk-embedded .details-actions { margin-top: 10px; }
+}
+@media (min-width: 601px) and (hover: hover) and (pointer: fine) {
+  .vk-embedded .list-items button {
+    min-height: 36px; padding: 7px 11px; font-size: 14px;
+  }
+  .vk-embedded .list-items .result-type { font-size: 11px; }
+}
+/* Если панель приложения очень низкая, лучше оставить пользователю карту. */
+@media (min-width: 601px) and (max-height: 580px) {
+  .vk-embedded .details img { max-height: 145px; }
+  .vk-embedded .details-scroll { padding-bottom: 10px; }
+}
+
+/* Встроенная панель ссылки вместо браузерного prompt().
+   На любом экране сохраняются крупные интерактивные области (44px). */
+.share-panel {
+  position: absolute; z-index: 1850; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(390px, calc(100% - 24px)); max-height: calc(100% - 20px);
+  overflow-y: auto; overflow-wrap: anywhere;
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 11px; box-shadow: var(--shadow);
+  padding: 12px 15px 15px;
+  color: var(--ink);
+}
+.share-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.share-panel-heading h2 { font-size: 18px; margin: 2px 0 8px; }
+.share-panel-heading button {
+  min-width: 44px; min-height: 44px; border: none; border-radius: 6px;
+  background: transparent; font-size: 27px;
+}
+.share-panel p { margin: 3px 0 12px; font-size: 14px; line-height: 1.4; }
+.share-panel label { display: block; margin-bottom: 5px; font-size: 13px; color: var(--muted); }
+.share-panel input {
+  width: 100%; min-width: 0; height: 44px; background: #fffdf8; color: var(--ink);
+  border: 1px solid var(--border); border-radius: 6px; padding: 9px 10px;
+  font-size: 14px;
+}
+.share-panel-actions { display: flex; justify-content: flex-end; margin-top: 11px; }
+.share-panel-actions button {
+  min-height: 44px; border: 1px solid var(--border); border-radius: 6px;
+  background: #e8d3b9; padding: 9px 14px;
+}
+.share-panel #share-copy-status { margin: 10px 0 0; font-size: 13px; }
+@media (max-width: 600px) {
+  .share-panel { top: 35%; padding: 10px 12px 12px; }
+}
