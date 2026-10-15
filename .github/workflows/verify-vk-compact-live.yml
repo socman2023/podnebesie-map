@@ -1,0 +1,92 @@
+name: Verify compact VK staging in production
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [vk-mini-app]
+    paths: ['.github/workflows/verify-vk-compact-live.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  public-vk-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify published compact assets and working production root
+        run: |
+          set -euo pipefail
+          base="https://socman2023.github.io/podnebesie-map"
+          for i in $(seq 1 30); do
+            curl -fsSL --max-time 15 "$base/vk/style.css?test=compact-v2" -o /tmp/vk-style.css
+            curl -fsSL --max-time 15 "$base/vk/index.html?test=compact-v2" -o /tmp/vk-index.html
+            curl -fsSL --max-time 15 "$base/vk/vk-app.js?test=compact-v2" -o /tmp/vk-app.js
+            if grep -q 'min(318px' /tmp/vk-style.css &&
+              grep -q 'В избранное ВК' /tmp/vk-index.html &&
+              grep -q 'showLinkPanel' /tmp/vk-app.js; then
+              echo "New VK interface published"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then echo "New assets not deployed"; exit 1; fi
+            sleep 8
+          done
+          if grep -q "window.prompt(" /tmp/vk-app.js; then echo "Old browser prompt found"; exit 1; fi
+          test "$(curl -sSL --max-time 15 -o /dev/null -w '%{http_code}' "$base/")" = 200
+          echo "Original map still available"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save @playwright/test@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Verify live VK embedded desktop and mobile rendering
+        run: |
+          mkdir -p screenshots
+          timeout 120s node - <<'NODE'
+          const {chromium} = require('playwright');
+          const mock = [
+            'window.vkBridge = {',
+            '  isEmbedded:()=>true, subscribe:()=>{},',
+            '  send:(name)=>name==="VKWebAppShare" ? Promise.reject(new Error("sharing unavailable")) : Promise.resolve({})',
+            '};'
+          ].join('\n');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try {
+              for(const width of [320,390,850,1024]){
+                const mobile=width<601;
+                const page=await browser.newPage({viewport:{width,height:mobile?820:650},isMobile:mobile,hasTouch:mobile});
+                page.setDefaultTimeout(15000);
+                const errors=[];
+                page.on('pageerror',e=>errors.push(e.message));
+                await page.route('**/vendor/vk-bridge/browser.min.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:mock}));
+                await page.goto('https://socman2023.github.io/podnebesie-map/vk/?vk_app_id=54823637&vk_platform=desktop_web#place=academia',{waitUntil:'domcontentloaded'});
+                await page.locator('#loading-state').waitFor({state:'hidden',timeout:25000});
+                const title=await page.locator('#details-title').textContent();
+                if(title!=='Академия')throw Error('Card failed at '+width);
+                const labels=await page.locator('#vk-favorite').textContent();
+                if(labels!=='В избранное ВК')throw Error('Favorite label failed at '+width);
+                const panel=await page.locator('#details').boundingBox();
+                if(width>=601 && panel.width>320)throw Error('Desktop card is too wide: '+panel.width);
+                await page.locator('#location-share').click();
+                await page.locator('#share-panel').waitFor({state:'visible'});
+                const input=await page.locator('#share-link').inputValue();
+                if(input!=='https://vk.com/app54823637#place=academia')throw Error('Wrong share link '+input);
+                await page.locator('#share-close').click();
+                const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+                if(overflow>1)throw Error('Horizontal overflow at '+width+': '+overflow);
+                if(errors.length)throw Error(errors.join('\n'));
+                await page.screenshot({path:'screenshots/vk-'+width+'.png'});
+                console.log('LIVE OK',width,title,'panel',panel.width,'no overflow');
+                await page.close();
+              }
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vk-compact-live-preview
+          path: screenshots/
+          if-no-files-found: ignore
