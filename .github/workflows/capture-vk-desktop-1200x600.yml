@@ -97,6 +97,13 @@ jobs:
               await page.locator('#details-close').click();
               await page.locator('#search-input').fill('Златоград');
               await page.locator('#search-results button').first().waitFor({state:'visible'});
+              await page.locator('#search-results button').first().click();
+              await page.locator('#details-title').waitFor({state:'visible'});
+              if((await page.locator('#details-title').innerText())!=='Златоград')throw Error('Search destination incorrect');
+              await page.locator('#details-close').click();
+              await page.locator('#search-input').fill('');
+              await page.locator('#search-input').fill('Златоград');
+              await page.locator('#search-results button').first().waitFor({state:'visible'});
               await snap('03-search');
 
               await page.locator('#search-input').fill('');
