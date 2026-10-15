@@ -75,17 +75,31 @@ jobs:
               await page.waitForTimeout(700);
               await snap('01-overview');
 
-              await open('#place=academia');
+              await page.locator('#search-input').fill('Академия');
+              await page.locator('#search-results button').first().waitFor({state:'visible'});
+              await page.locator('#search-results button').first().click();
               await page.locator('#details-title').waitFor({state:'visible'});
               if((await page.locator('#details-title').innerText())!=='Академия')throw Error('Card incorrect');
+              const cardImage=page.locator('#details-image');
+              if(await cardImage.isVisible()){
+                await cardImage.evaluate(async img=>{
+                  if(img.complete)return;
+                  await Promise.race([
+                    new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});}),
+                    new Promise(resolve=>setTimeout(resolve,6000))
+                  ]);
+                });
+              }
+              await page.locator('#search-input').fill('');
+              await page.waitForTimeout(400);
               await snap('02-location-card');
 
-              await open();
+              await page.locator('#details-close').click();
               await page.locator('#search-input').fill('Златоград');
               await page.locator('#search-results button').first().waitFor({state:'visible'});
               await snap('03-search');
 
-              await open();
+              await page.locator('#search-input').fill('');
               await page.locator('#type-filter').selectOption('city');
               await page.locator('#list-toggle').click();
               await page.locator('#list-panel').waitFor({state:'visible'});
