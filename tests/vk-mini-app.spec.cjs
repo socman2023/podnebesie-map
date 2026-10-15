@@ -191,3 +191,49 @@ test('manual link remains selectable when clipboard is denied', async ({ page })
   });
   expect(selected).toBeTruthy();
 });
+
+
+test('closing native VK share dialog does not open copy-link fallback', async ({ page }) => {
+  await launchVK(page, BASE + '/?vk_app_id=54823637&vk_platform=desktop_web#place=academia');
+  const cancellationVariants = [
+    {error_type:'client_error',error_data:{error_code:4,error_reason:'User denied'}},
+    {error_type:'client_error',error_data:{error_code:1,error_reason:'User cancelled'}},
+    {detail:{data:{error_type:'client_error',error_data:{error_code:4,error_reason:'User denied'}}}},
+    {name:'AbortError',message:'The user aborted a request'}
+  ];
+  for (const failure of cancellationVariants) {
+    await page.evaluate(error=>{
+      window.vkBridge.send = method => {
+        if (method==='VKWebAppShare') return Promise.reject(error);
+        return Promise.resolve({});
+      };
+    }, failure);
+    await page.locator('#location-share').click();
+    await expect(page.locator('#share-panel')).toBeHidden();
+    await expect(page.locator('#details-title')).toHaveText('Академия');
+    await page.locator('#vk-share').click();
+    await expect(page.locator('#share-panel')).toBeHidden();
+  }
+  await page.evaluate(()=>{
+    window.vkBridge.send = method => Promise.resolve(method==='VKWebAppShare' ? {result:[]} : {});
+  });
+  await page.locator('#location-share').click();
+  await expect(page.locator('#share-panel')).toBeHidden();
+});
+
+test('a real VK share error still offers the copy-link fallback', async ({ page }) => {
+  await launchVK(page, BASE + '/?vk_app_id=54823637&vk_platform=desktop_web#place=academia');
+  await page.evaluate(()=>{
+    window.vkBridge.send = method => {
+      if(method==='VKWebAppShare') {
+        return Promise.reject({error_type:'client_error',error_data:{
+          error_code:1,error_reason:'Unsupported action'
+        }});
+      }
+      return Promise.resolve({});
+    };
+  });
+  await page.locator('#location-share').click();
+  await expect(page.locator('#share-panel')).toBeVisible();
+  await expect(page.locator('#share-link')).toHaveValue('https://vk.com/app54823637#place=academia');
+});
